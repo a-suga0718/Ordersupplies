@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>備品発注システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --surface2: #F0EEE8;
+    --text: #1A1917;
+    --text2: #6B6860;
+    --text3: #9E9C96;
+    --border: #E2DFD7;
+    --accent: #1A3A2A;
+    --accent-light: #E8F2EC;
+    --accent-mid: #2D6A4A;
+    --danger: #C0392B;
+    --danger-light: #FDEAEA;
+    --warn: #D68910;
+    --warn-light: #FEF5E7;
+    --info: #1A6A9A;
+    --info-light: #EAF4FB;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Noto Sans JP', sans-serif;
+    --radius: 8px;
+    --radius-lg: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--accent);
+    color: #fff;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: fixed;
+    height: 100vh;
+    top: 0; left: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+  }
+  .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .sidebar-nav { padding: 12px 0; flex: 1; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.65);
+    font-size: 13px;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: #6FCF97; }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .badge {
+    margin-left: auto;
+    background: #E74C3C;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 1px 6px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .sidebar-user {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .sidebar-user strong { display: block; color: #fff; font-size: 13px; }
+
+  /* Main */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar h2 { font-size: 16px; font-weight: 600; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* Buttons */
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: var(--sans);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-mid); }
+  .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-outline:hover { background: var(--surface2); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: 0.9; }
+  .btn-success { background: #27AE60; color: #fff; }
+  .btn-success:hover { opacity: 0.9; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* Content area */
+  .content { padding: 28px; flex: 1; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-value { font-size: 26px; font-weight: 600; margin-top: 4px; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .stat-card.pending .stat-value { color: var(--warn); }
+  .stat-card.approved .stat-value { color: var(--accent-mid); }
+  .stat-card.rejected .stat-value { color: var(--danger); }
+
+  /* Tables */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .table-title { font-size: 14px; font-weight: 600; }
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    gap: 8px;
+  }
+  .search-box input {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-family: var(--sans);
+    color: var(--text);
+    outline: none;
+    width: 180px;
+  }
+  .search-box input::placeholder { color: var(--text3); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF8; }
+
+  /* Status badges */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .status-pending { background: var(--warn-light); color: var(--warn); }
+  .status-pending::before { background: var(--warn); }
+  .status-approved { background: var(--accent-light); color: var(--accent-mid); }
+  .status-approved::before { background: var(--accent-mid); }
+  .status-rejected { background: var(--danger-light); color: var(--danger); }
+  .status-rejected::before { background: var(--danger); }
+  .status-ordered { background: var(--info-light); color: var(--info); }
+  .status-ordered::before { background: var(--info); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    background: var(--surface);
+  }
+  .tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    font-weight: 500;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .modal-head {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-head h3 { font-size: 15px; font-weight: 600; }
+  .modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text3); line-height: 1; }
+  .modal-body { padding: 20px 24px; }
+  .modal-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* Form */
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .form-row input,
+  .form-row select,
+  .form-row textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-row input:focus,
+  .form-row select:focus,
+  .form-row textarea:focus { border-color: var(--accent-mid); }
+  .form-row textarea { min-height: 72px; resize: vertical; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Notification toast */
+  .toast-container { position: fixed; top: 20px; right: 20px; z-index: 500; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    background: var(--accent);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+  }
+  .toast.error { background: var(--danger); }
+  .toast.warn { background: var(--warn); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty p { font-size: 13px; margin-top: 4px; }
+
+  /* Detail view */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .detail-field label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
+  .detail-field span { font-size: 13px; font-weight: 500; }
+
+  /* Link chips */
+  .link-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .link-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .link-row input { flex: 1; }
+  .link-row .shop-select {
+    width: 140px;
+    flex-shrink: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+  }
+  .link-row .shop-select:focus { border-color: var(--accent-mid); }
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .btn-icon:hover { background: var(--border); }
+  .link-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid;
+    transition: opacity 0.15s;
+    cursor: pointer;
+  }
+  .link-chip:hover { opacity: 0.75; }
+  .shop-amazon  { background: #FFF8E8; color: #7A5000; border-color: #F0C040; }
+  .shop-askul   { background: #E8F0FF; color: #1A3A8A; border-color: #90ACF0; }
+  .shop-monotaro{ background: #FFF0E8; color: #8A2A00; border-color: #F09060; }
+  .shop-other   { background: var(--surface2); color: var(--text2); border-color: var(--border); }
+  .link-chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  /* Approval card */
+  .approval-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .approval-card-head {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .approval-card-body { padding: 14px 18px; }
+  .approval-meta { display: flex; gap: 20px; flex-wrap: wrap; }
+  .meta-item { font-size: 12px; color: var(--text2); }
+  .meta-item strong { display: block; font-size: 13px; color: var(--text); }
+  .approval-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📦 備品発注</h1>
+      <p>Supply Order System</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard', this)">
+        <span class="nav-icon">📊</span> ダッシュボード
+      </div>
+      <div class="nav-item" data-page="new-order" onclick="navigate('new-order', this)">
+        <span class="nav-icon">✏️</span> 新規申請
+      </div>
+      <div class="nav-item" data-page="approval" onclick="navigate('approval', this)">
+        <span class="nav-icon">✅</span> 承認待ち
+        <span class="badge" id="approval-badge">2</span>
+      </div>
+      <div class="nav-item" data-page="history" onclick="navigate('history', this)">
+        <span class="nav-icon">📋</span> 発注履歴
+      </div>
+      <div class="nav-item" data-page="account-map" onclick="navigate('account-map', this)">
+        <span class="nav-icon">⚙</span> 勘定科目設定
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <strong>田中 花子</strong>
+      総務部 ／ 一般ユーザー
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <h2 id="page-title">ダッシュボード</h2>
+      <div class="topbar-actions">
+        <span style="font-size:12px;color:var(--text3);" id="today-date"></span>
+        <button class="btn btn-primary" onclick="openModal('new')">＋ 新規申請</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ダッシュボード -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-bar">
+          <div class="stat-card pending">
+            <div class="stat-label">承認待ち</div>
+            <div class="stat-value" id="stat-pending">2</div>
+            <div class="stat-sub">今月 申請中</div>
+          </div>
+          <div class="stat-card approved">
+            <div class="stat-label">承認済み</div>
+            <div class="stat-value" id="stat-approved">5</div>
+            <div class="stat-sub">今月 承認完了</div>
+          </div>
+          <div class="stat-card rejected">
+            <div class="stat-label">却下</div>
+            <div class="stat-value" id="stat-rejected">1</div>
+            <div class="stat-sub">今月 却下件数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">発注総額</div>
+            <div class="stat-value" id="stat-total" style="font-size:20px;">¥128,400</div>
+            <div class="stat-sub">今月 合計</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">最近の申請</div>
+            <button class="btn btn-outline btn-sm" onclick="navigate('history', document.querySelector('[data-page=history]'))">すべて見る</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>申請番号</th>
+                <th>品目</th>
+                <th>申請者</th>
+                <th>数量</th>
+                <th>金額</th>
+                <th>ステータス</th>
+                <th>日付</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 新規申請 -->
+      <div class="page" id="page-new-order">
+        <div class="table-card" style="max-width:600px;">
+          <div class="table-header">
+            <div class="table-title">備品発注申請フォーム</div>
+          </div>
+          <div style="padding:24px;">
+            <div class="form-row">
+              <label>品目名 *</label>
+              <input type="text" id="item-name" placeholder="例：コピー用紙 A4 500枚×5冊">
+            </div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label>カテゴリ *</label>
+                <select id="item-category">
+                  <option value="">選択してください</option>
+                  <option>文房具・事務用品</option>
+                  <option>コピー用紙・印刷</option>
+                  <option>電子機器・PC周辺機器</option>
+                  <option>清掃用品</option>
+                  <option>その他</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>数量 *</label>
+                <input type="number" id="item-qty" placeholder="1" min="1" value="1">
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label>単価（円）*</label>
+                <input type="number" id="item-price" placeholder="0" min="0">
+              </div>
+              <div class="form-row">
+                <label>合計金額</label>
+                <input type="text" id="item-total" readonly placeholder="¥0" style="background:var(--surface2); color:var(--text2);">
+              </div>
+            </div>
+            <div class="form-row">
+              <label>商品リンク（任意・複数追加可）</label>
+              <div class="link-list" id="link-list"></div>
+              <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="addLinkRow()">＋ リンクを追加</button>
+            </div>
+            <div class="form-row">
+              <label>申請理由・備考</label>
+              <textarea id="item-note" placeholder="在庫が残り少なくなったため補充が必要です。"></textarea>
+            </div>
+            <div class="form-row">
+              <label>緊急度</label>
+              <select id="item-urgency">
+                <option value="normal">通常</option>
+                <option value="urgent">急ぎ（3営業日以内）</option>
+                <option value="asap">至急（本日中）</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <button class="btn btn-primary" onclick="submitOrder()">📤 申請する</button>
+              <button class="btn btn-outline" onclick="clearForm()">クリア</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 承認 -->
+      <div class="page" id="page-approval">
+        <div id="approval-list"></div>
+      </div>
+
+      <!-- 履歴 -->
+      <div class="page" id="page-history">
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">発注履歴</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <select id="filter-status" onchange="renderHistory()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-family:var(--sans);">
+                <option value="">すべてのステータス</option>
+                <option value="pending">承認待ち</option>
+                <option value="approved">承認済み</option>
+                <option value="rejected">却下</option>
+                <option value="ordered">発注済み</option>
+              </select>
+              <div class="search-box">
+                <span style="color:var(--text3);">🔍</span>
+                <input type="text" placeholder="品目・申請者で検索" id="search-input" oninput="renderHistory()">
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="openModal('csv')" style="white-space:nowrap;">⬇ 弥生CSV出力</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>申請番号</th>
+                <th>品目</th>
+                <th>カテゴリ</th>
+                <th>申請者</th>
+                <th>数量</th>
+                <th>金額</th>
+                <th>ステータス</th>
+                <th>申請日</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="history-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 勘定科目設定 -->
+      <div class="page" id="page-account-map">
+        <div style="max-width:700px;">
+          <div class="table-card" style="margin-bottom:16px;">
+            <div class="table-header">
+              <div>
+                <div class="table-title">カテゴリ別 勘定科目マッピング</div>
+                <p style="font-size:12px;color:var(--text3);margin-top:2px;">CSV出力時にカテゴリに応じた勘定科目が自動で適用されます</p>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-outline btn-sm" onclick="resetMapping()">リセット</button>
+                <button class="btn btn-primary btn-sm" onclick="saveMapping()">💾 保存</button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:36%;">カテゴリ</th>
+                  <th style="width:26%;">借方勘定科目</th>
+                  <th style="width:26%;">税区分</th>
+                  <th style="width:12%;"></th>
+                </tr>
+              </thead>
+              <tbody id="mapping-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">貸方・共通設定</div>
+            </div>
+            <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-row" style="margin:0;">
+                <label>貸方勘定科目（全カテゴリ共通）</label>
+                <select id="global-credit-account">
+                  <option value="未払金">未払金</option>
+                  <option value="買掛金">買掛金</option>
+                  <option value="現金">現金</option>
+                  <option value="普通預金">普通預金</option>
+                </select>
+              </div>
+              <div class="form-row" style="margin:0;">
+                <label>マッピング未設定時のデフォルト借方科目</label>
+                <select id="global-debit-fallback">
+                  <option value="消耗品費">消耗品費</option>
+                  <option value="事務用品費">事務用品費</option>
+                  <option value="雑費">雑費</option>
+                  <option value="備品">備品</option>
+                </select>
+              </div>
+            </div>
+            <div style="padding:0 20px 20px;">
+              <div style="background:var(--warn-light);border:1px solid #F0C040;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:#7A5000;line-height:1.7;">
+                💡 <strong>弥生会計での勘定科目名について</strong><br>
+                弥生会計に登録されている科目名と完全一致させる必要があります。例：「消耗品費」「事務用品費」「備品」など。インポートエラーが出た場合は弥生会計の科目名を確認してください。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>申請詳細</h3>
+      <button class="modal-close" onclick="closeModal('detail')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+    <div class="modal-foot" id="modal-detail-foot"></div>
+  </div>
+</div>
+
+<!-- 新規申請モーダル（クイック） -->
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>📦 新規発注申請</h3>
+      <button class="modal-close" onclick="closeModal('new')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">詳細フォームは「新規申請」メニューからもご利用いただけます。</p>
+      <div class="form-row">
+        <label>品目名 *</label>
+        <input type="text" id="m-item-name" placeholder="例：コピー用紙 A4">
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>数量 *</label>
+          <input type="number" id="m-item-qty" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-row">
+          <label>単価（円）*</label>
+          <input type="number" id="m-item-price" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>カテゴリ</label>
+        <select id="m-item-category">
+          <option value="">選択してください</option>
+          <option>文房具・事務用品</option>
+          <option>コピー用紙・印刷</option>
+          <option>電子機器・PC周辺機器</option>
+          <option>清掃用品</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>申請理由</label>
+        <textarea id="m-item-note" placeholder="補充理由などをご記入ください"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('new')">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitModalOrder()">📤 申請する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弥生CSV出力モーダル -->
+<div class="modal-overlay" id="modal-csv">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>⬇ 弥生会計 仕訳インポート用CSV出力</h3>
+      <button class="modal-close" onclick="closeModal('csv')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div style="background:var(--info-light);border:1px solid #90C8EE;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--info);margin-bottom:18px;line-height:1.7;">
+        <strong>弥生会計インポート形式</strong>で出力します。<br>
+        弥生会計 → 仕訳帳 → 「インポート」から読み込んでください。<br>
+        <span style="color:var(--text3);">※ 消費税は10%（内税）で計算します。勘定科目は変更可能です。</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-row" style="margin:0;">
+          <label>出力期間 - 開始日</label>
+          <input type="date" id="csv-date-from">
+        </div>
+        <div class="form-row" style="margin:0;">
+          <label>出力期間 - 終了日</label>
+          <input type="date" id="csv-date-to">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-row" style="margin:0;">
+          <label>対象ステータス</label>
+          <select id="csv-status-filter">
+            <option value="approved">承認済みのみ</option>
+            <option value="ordered">発注済みのみ</option>
+            <option value="approved,ordered">承認済み＋発注済み</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin:0;">
+          <label>借方勘定科目</label>
+          <div style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--accent-light);color:var(--accent-mid);display:flex;align-items:center;gap:6px;">
+            ✅ カテゴリ別マッピングを自動適用
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div class="form-row" style="margin:0;">
+          <label>貸方勘定科目</label>
+          <div style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--surface2);color:var(--text2);display:flex;align-items:center;justify-content:space-between;">
+            <span id="csv-credit-preview">未払金</span>
+            <span style="font-size:11px;color:var(--text3);">設定ページで変更</span>
+          </div>
+        </div>
+        <div class="form-row" style="margin:0;">
+          <label>税区分</label>
+          <select id="csv-tax">
+            <option value="課税仕入10%">課税仕入 10%（内税）</option>
+            <option value="課税仕入8%">課税仕入 8%（内税）</option>
+            <option value="非課税仕入">非課税仕入</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="csv-preview-area"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between;">
+      <button class="btn btn-outline" onclick="previewCsv()">👁 プレビュー</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="closeModal('csv')">キャンセル</button>
+        <button class="btn btn-primary" onclick="downloadCsv()">⬇ CSVダウンロード</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ---- Data ----
+let orders = [
+  { id: 'ORD-2024-001', item: 'コピー用紙 A4 (500枚×5冊)', category: 'コピー用紙・印刷', qty: 3, price: 2800, requester: '田中 花子', dept: '総務部', status: 'approved', date: '2024-12-01', note: '在庫切れのため', urgency: 'normal', links: [{shop:'askul', url:'https://www.askul.co.jp/p/3137363/'}] },
+  { id: 'ORD-2024-002', item: 'ボールペン 黒 12本入り', category: '文房具・事務用品', qty: 5, price: 650, requester: '鈴木 一郎', dept: '営業部', status: 'approved', date: '2024-12-03', note: '', urgency: 'normal', links: [{shop:'amazon', url:'https://www.amazon.co.jp/dp/B001234/'}, {shop:'askul', url:'https://www.askul.co.jp/p/9999/'}] },
+  { id: 'ORD-2024-003', item: 'USBハブ 4ポート', category: '電子機器・PC周辺機器', qty: 2, price: 3200, requester: '佐藤 美咲', dept: '開発部', status: 'pending', date: '2024-12-10', note: 'テレワーク用に必要です', urgency: 'urgent', links: [{shop:'amazon', url:'https://www.amazon.co.jp/dp/B00ABC123/'}, {shop:'monotaro', url:'https://www.monotaro.com/p/1234/'}] },
+  { id: 'ORD-2024-004', item: 'ホワイトボードマーカー（10色セット）', category: '文房具・事務用品', qty: 4, price: 1200, requester: '田中 花子', dept: '総務部', status: 'pending', date: '2024-12-11', note: '会議室用', urgency: 'normal', links: [] },
+  { id: 'ORD-2024-005', item: '高級チェア エルゴノミクス', category: 'その他', qty: 1, price: 85000, requester: '山田 太郎', dept: '経営企画部', status: 'rejected', date: '2024-11-28', note: '腰痛対策のため', urgency: 'normal', links: [{shop:'amazon', url:'https://www.amazon.co.jp/dp/BCHAIR/'}] },
+  { id: 'ORD-2024-006', item: 'クリアファイル A4 (100枚入り)', category: '文房具・事務用品', qty: 2, price: 980, requester: '鈴木 一郎', dept: '営業部', status: 'ordered', date: '2024-11-25', note: '', urgency: 'normal', links: [{shop:'askul', url:'https://www.askul.co.jp/p/12345/'}] },
+  { id: 'ORD-2024-007', item: 'ティッシュペーパー (5箱パック)', category: '清掃用品', qty: 6, price: 450, requester: '佐藤 美咲', dept: '開発部', status: 'approved', date: '2024-11-20', note: '', urgency: 'normal', links: [] },
+];
+
+// ---- Shop helpers ----
+const SHOPS = [
+  { value: 'amazon',   label: 'Amazon',    cls: 'shop-amazon',   icon: '🛒' },
+  { value: 'askul',    label: 'アスクル',   cls: 'shop-askul',    icon: '📦' },
+  { value: 'monotaro', label: 'モノタロウ', cls: 'shop-monotaro', icon: '🔧' },
+  { value: 'other',    label: 'その他',     cls: 'shop-other',    icon: '🔗' },
+];
+function shopInfo(val) { return SHOPS.find(s => s.value === val) || SHOPS[3]; }
+function linkChipsHtml(links) {
+  if (!links || links.length === 0) return '';
+  return '<div class="link-chips-row">' + links.map(l => {
+    const s = shopInfo(l.shop);
+    return `<a href="${l.url}" target="_blank" class="link-chip ${s.cls}" onclick="event.stopPropagation();">${s.icon} ${s.label} で見る</a>`;
+  }).join('') + '</div>';
+}
+function addLinkRow(url = '', shop = 'amazon') {
+  const list = document.getElementById('link-list');
+  const row = document.createElement('div');
+  row.className = 'link-row';
+  row.innerHTML = `
+    <select class="shop-select">
+      ${SHOPS.map(s => `<option value="${s.value}"${s.value===shop?' selected':''}>${s.icon} ${s.label}</option>`).join('')}
+    </select>
+    <input type="url" placeholder="https://www.amazon.co.jp/dp/..." value="${url}" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent-mid)'" onblur="this.style.borderColor='var(--border)'">
+    <button type="button" class="btn-icon" onclick="this.closest('.link-row').remove()" title="削除">✕</button>
+  `;
+  list.appendChild(row);
+}
+function getLinks() {
+  return [...document.querySelectorAll('#link-list .link-row')].map(row => ({
+    shop: row.querySelector('.shop-select').value,
+    url: row.querySelector('input[type=url]').value.trim()
+  })).filter(l => l.url);
+}
+
+// ---- Utils ----
+function formatDate(d) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`;
+}
+function formatYen(n) { return '¥' + Number(n).toLocaleString(); }
+function statusBadge(s) {
+  const map = { pending: ['承認待ち', 'pending'], approved: ['承認済み', 'approved'], rejected: ['却下', 'rejected'], ordered: ['発注済み', 'ordered'] };
+  const [label, cls] = map[s] || [s, ''];
+  return `<span class="status status-${cls}">${label}</span>`;
+}
+function urgencyLabel(u) {
+  return { normal: '通常', urgent: '急ぎ', asap: '至急' }[u] || u;
+}
+function genId() {
+  const n = String(orders.length + 1).padStart(3, '0');
+  return `ORD-2024-${n}`;
+}
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast${type === 'error' ? ' error' : type === 'warn' ? ' warn' : ''}`;
+  el.innerHTML = `<span>${type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️'}</span> ${msg}`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ---- Navigation ----
+const pageTitles = { dashboard: 'ダッシュボード', 'new-order': '新規申請', approval: '承認待ち一覧', history: '発注履歴', 'account-map': '勘定科目設定' };
+function navigate(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[page] || page;
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'approval') renderApproval();
+  if (page === 'history') renderHistory();
+  if (page === 'account-map') renderMappingTable();
+}
+
+// ---- Dashboard ----
+function renderDashboard() {
+  const pending = orders.filter(o => o.status === 'pending').length;
+  const approved = orders.filter(o => o.status === 'approved').length;
+  const rejected = orders.filter(o => o.status === 'rejected').length;
+  const total = orders.filter(o => o.status !== 'rejected').reduce((a, o) => a + o.qty * o.price, 0);
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+  document.getElementById('stat-total').textContent = formatYen(total);
+  document.getElementById('approval-badge').textContent = pending;
+
+  const tbody = document.getElementById('dashboard-table');
+  const recent = [...orders].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+  tbody.innerHTML = recent.map(o => `
+    <tr onclick="openDetail('${o.id}')" style="cursor:pointer;">
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${o.id}</span></td>
+      <td style="font-weight:500;">${o.item}</td>
+      <td>${o.requester}</td>
+      <td>${o.qty}点</td>
+      <td>${formatYen(o.qty * o.price)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--text3);">${formatDate(o.date)}</td>
+    </tr>
+  `).join('');
+}
+
+// ---- Approval ----
+function renderApproval() {
+  const pending = orders.filter(o => o.status === 'pending');
+  const el = document.getElementById('approval-list');
+  if (pending.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">✅</div><strong>承認待ちの申請はありません</strong><p>すべての申請が処理されました</p></div>`;
+    return;
+  }
+  el.innerHTML = pending.map(o => `
+    <div class="approval-card">
+      <div class="approval-card-head">
+        <div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${o.id}</span>
+          ${o.urgency !== 'normal' ? `<span style="margin-left:8px;font-size:11px;font-weight:600;color:${o.urgency==='asap'?'var(--danger)':'var(--warn)'};">● ${urgencyLabel(o.urgency)}</span>` : ''}
+        </div>
+        <span style="font-size:12px;color:var(--text3);">申請日：${formatDate(o.date)}</span>
+      </div>
+      <div class="approval-card-body">
+        <p style="font-size:15px;font-weight:600;margin-bottom:10px;">${o.item}</p>
+        <div class="approval-meta">
+          <div class="meta-item"><strong>${o.requester}</strong>申請者</div>
+          <div class="meta-item"><strong>${o.dept}</strong>部署</div>
+          <div class="meta-item"><strong>${o.qty}点</strong>数量</div>
+          <div class="meta-item"><strong>${formatYen(o.qty * o.price)}</strong>金額</div>
+          <div class="meta-item"><strong>${o.category}</strong>カテゴリ</div>
+        </div>
+        ${o.note ? `<p style="margin-top:10px;font-size:12px;color:var(--text2);padding:8px 12px;background:var(--surface2);border-radius:var(--radius);">💬 ${o.note}</p>` : ''}
+        ${o.links && o.links.length ? `<div style="margin-top:10px;"><p style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">商品リンク</p>${linkChipsHtml(o.links)}</div>` : ''}
+        <div class="approval-actions">
+          <button class="btn btn-success" onclick="approveOrder('${o.id}')">✔ 承認する</button>
+          <button class="btn btn-danger" onclick="rejectOrder('${o.id}')">✘ 却下する</button>
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${o.id}')">詳細を見る</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function approveOrder(id) {
+  const o = orders.find(x => x.id === id);
+  if (o) { o.status = 'approved'; renderApproval(); renderDashboard(); updateBadge(); toast(`「${o.item}」を承認しました`); }
+}
+function rejectOrder(id) {
+  const o = orders.find(x => x.id === id);
+  if (o) { o.status = 'rejected'; renderApproval(); renderDashboard(); updateBadge(); toast(`「${o.item}」を却下しました`, 'warn'); }
+}
+function updateBadge() {
+  document.getElementById('approval-badge').textContent = orders.filter(o => o.status === 'pending').length;
+}
+
+// ---- History ----
+function renderHistory() {
+  const filterStatus = document.getElementById('filter-status').value;
+  const search = document.getElementById('search-input').value.toLowerCase();
+  let filtered = orders.filter(o => {
+    if (filterStatus && o.status !== filterStatus) return false;
+    if (search && !o.item.toLowerCase().includes(search) && !o.requester.toLowerCase().includes(search)) return false;
+    return true;
+  }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  const tbody = document.getElementById('history-table');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3);">該当する申請がありません</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(o => `
+    <tr onclick="openDetail('${o.id}')" style="cursor:pointer;">
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${o.id}</span></td>
+      <td style="font-weight:500;">${o.item}</td>
+      <td style="color:var(--text2);">${o.category}</td>
+      <td>${o.requester}</td>
+      <td>${o.qty}点</td>
+      <td>${formatYen(o.qty * o.price)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--text3);">${formatDate(o.date)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openDetail('${o.id}')">詳細</button></td>
+    </tr>
+  `).join('');
+}
+
+// ---- Detail Modal ----
+function openDetail(id) {
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  const body = document.getElementById('modal-detail-body');
+  body.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <p style="font-size:16px;font-weight:600;margin-bottom:6px;">${o.item}</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        ${statusBadge(o.status)}
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono);">${o.id}</span>
+        ${o.urgency !== 'normal' ? `<span style="font-size:11px;font-weight:600;color:${o.urgency==='asap'?'var(--danger)':'var(--warn)'};">● ${urgencyLabel(o.urgency)}</span>` : ''}
+      </div>
+    </div>
+    <div class="detail-grid" style="margin-bottom:14px;">
+      <div class="detail-field"><label>申請者</label><span>${o.requester}（${o.dept}）</span></div>
+      <div class="detail-field"><label>カテゴリ</label><span>${o.category}</span></div>
+      <div class="detail-field"><label>数量</label><span>${o.qty}点</span></div>
+      <div class="detail-field"><label>単価</label><span>${formatYen(o.price)}</span></div>
+      <div class="detail-field"><label>合計金額</label><span style="font-size:16px;font-weight:600;color:var(--accent);">${formatYen(o.qty * o.price)}</span></div>
+      <div class="detail-field"><label>申請日</label><span>${formatDate(o.date)}</span></div>
+      ${o.vendor ? `<div class="detail-field"><label>購入先</label><span>${o.vendor}</span></div>` : ''}
+    </div>
+    ${o.links && o.links.length ? `<div style="margin-bottom:14px;"><p style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">商品リンク</p>${linkChipsHtml(o.links)}</div>` : ''}
+    ${o.note ? `<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;font-size:13px;color:var(--text2);"><span style="font-weight:600;">申請理由</span><br>${o.note}</div>` : ''}
+  `;
+  const foot = document.getElementById('modal-detail-foot');
+  if (o.status === 'pending') {
+    foot.innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('detail')">閉じる</button>
+      <button class="btn btn-danger" onclick="rejectOrder('${o.id}');closeModal('detail')">✘ 却下</button>
+      <button class="btn btn-success" onclick="approveOrder('${o.id}');closeModal('detail')">✔ 承認</button>
+    `;
+  } else {
+    foot.innerHTML = `<button class="btn btn-outline" onclick="closeModal('detail')">閉じる</button>`;
+  }
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+// ---- New Order ----
+document.getElementById('item-qty').addEventListener('input', calcTotal);
+document.getElementById('item-price').addEventListener('input', calcTotal);
+function calcTotal() {
+  const qty = parseInt(document.getElementById('item-qty').value) || 0;
+  const price = parseInt(document.getElementById('item-price').value) || 0;
+  document.getElementById('item-total').value = formatYen(qty * price);
+}
+function clearForm() {
+  ['item-name','item-qty','item-price','item-note'].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === 'item-qty' ? '1' : ''; });
+  document.getElementById('item-category').value = '';
+  document.getElementById('item-total').value = '';
+  document.getElementById('link-list').innerHTML = '';
+}
+function submitOrder() {
+  const name = document.getElementById('item-name').value.trim();
+  const qty = parseInt(document.getElementById('item-qty').value);
+  const price = parseInt(document.getElementById('item-price').value);
+  const cat = document.getElementById('item-category').value;
+  if (!name || !qty || !price || !cat) { toast('必須項目を入力してください', 'error'); return; }
+  const o = { id: genId(), item: name, category: cat, qty, price, requester: '田中 花子', dept: '総務部', status: 'pending', date: new Date().toISOString().slice(0,10), note: document.getElementById('item-note').value, urgency: document.getElementById('item-urgency').value, links: getLinks() };
+  orders.unshift(o);
+  clearForm();
+  updateBadge();
+  toast('申請を送信しました。承認待ちです。');
+  navigate('history', document.querySelector('[data-page=history]'));
+}
+function submitModalOrder() {
+  const name = document.getElementById('m-item-name').value.trim();
+  const qty = parseInt(document.getElementById('m-item-qty').value);
+  const price = parseInt(document.getElementById('m-item-price').value);
+  const cat = document.getElementById('m-item-category').value;
+  if (!name || !qty || !price) { toast('品目名・数量・単価は必須です', 'error'); return; }
+  const o = { id: genId(), item: name, category: cat || 'その他', qty, price, requester: '田中 花子', dept: '総務部', status: 'pending', date: new Date().toISOString().slice(0,10), note: document.getElementById('m-item-note').value, urgency: 'normal', links: [] };
+  orders.unshift(o);
+  closeModal('new');
+  updateBadge();
+  toast('申請を送信しました。承認待ちです。');
+  renderDashboard();
+}
+
+// ---- 勘定科目マッピング ----
+const DEBIT_OPTIONS  = ['消耗品費','事務用品費','雑費','備品','通信費','水道光熱費'];
+const TAX_OPTIONS    = ['課税仕入10%','課税仕入8%','非課税仕入'];
+const CATEGORIES     = ['文房具・事務用品','コピー用紙・印刷','電子機器・PC周辺機器','清掃用品','その他'];
+
+let accountMapping = {
+  '文房具・事務用品':    { debit: '消耗品費',  tax: '課税仕入10%' },
+  'コピー用紙・印刷':    { debit: '消耗品費',  tax: '課税仕入10%' },
+  '電子機器・PC周辺機器':{ debit: '備品',      tax: '課税仕入10%' },
+  '清掃用品':            { debit: '消耗品費',  tax: '課税仕入10%' },
+  'その他':              { debit: '雑費',      tax: '課税仕入10%' },
+};
+
+function getDebitForCategory(cat) {
+  const m = accountMapping[cat];
+  if (m) return { debit: m.debit, tax: m.tax };
+  const fb = document.getElementById('global-debit-fallback');
+  return { debit: fb ? fb.value : '消耗品費', tax: '課税仕入10%' };
+}
+function getCreditAccount() {
+  const el = document.getElementById('global-credit-account');
+  return el ? el.value : '未払金';
+}
+
+function renderMappingTable() {
+  const tbody = document.getElementById('mapping-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = CATEGORIES.map(cat => {
+    const m = accountMapping[cat] || { debit: '消耗品費', tax: '課税仕入10%' };
+    return `<tr>
+      <td style="font-weight:500;font-size:13px;">${cat}</td>
+      <td>
+        <select data-cat="${cat}" data-field="debit" onchange="updateMapping(this)"
+          style="width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--sans);font-size:13px;color:var(--text);background:var(--surface);outline:none;">
+          ${DEBIT_OPTIONS.map(o=>`<option${o===m.debit?' selected':''}>${o}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select data-cat="${cat}" data-field="tax" onchange="updateMapping(this)"
+          style="width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--sans);font-size:13px;color:var(--text);background:var(--surface);outline:none;">
+          ${TAX_OPTIONS.map(o=>`<option${o===m.tax?' selected':''}>${o}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m.debit==='備品'?'var(--info)':'var(--accent-mid)'};margin-left:4px;" title="${m.debit}"></span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateMapping(el) {
+  const cat   = el.dataset.cat;
+  const field = el.dataset.field;
+  if (!accountMapping[cat]) accountMapping[cat] = { debit: '消耗品費', tax: '課税仕入10%' };
+  accountMapping[cat][field] = el.value;
+  renderMappingTable();
+}
+function saveMapping() {
+  toast('勘定科目マッピングを保存しました');
+  const credit = document.getElementById('global-credit-account').value;
+  const el = document.getElementById('csv-credit-preview');
+  if (el) el.textContent = credit;
+}
+function resetMapping() {
+  accountMapping = {
+    '文房具・事務用品':    { debit: '消耗品費', tax: '課税仕入10%' },
+    'コピー用紙・印刷':    { debit: '消耗品費', tax: '課税仕入10%' },
+    '電子機器・PC周辺機器':{ debit: '備品',     tax: '課税仕入10%' },
+    '清掃用品':            { debit: '消耗品費', tax: '課税仕入10%' },
+    'その他':              { debit: '雑費',     tax: '課税仕入10%' },
+  };
+  renderMappingTable();
+  toast('デフォルト設定にリセットしました', 'warn');
+}
+
+// ---- 弥生CSV ----
+function getCsvTargetOrders() {
+  const from     = document.getElementById('csv-date-from').value;
+  const to       = document.getElementById('csv-date-to').value;
+  const statuses = document.getElementById('csv-status-filter').value.split(',');
+  return orders.filter(o => {
+    if (!statuses.includes(o.status)) return false;
+    if (from && o.date < from) return false;
+    if (to   && o.date > to)   return false;
+    return true;
+  }).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function buildYayoiRows(targets) {
+  const credit = getCreditAccount();
+  return targets.map(o => {
+    const { debit, tax } = getDebitForCategory(o.category);
+    const total  = o.qty * o.price;
+    const taxAmt = tax.includes('10%') ? Math.round(total * 10 / 110)
+                 : tax.includes('8%')  ? Math.round(total * 8  / 108) : 0;
+    const date   = o.date.replace(/-/g, '/');
+    const memo   = `${o.item}（${o.qty}点）${o.requester} ${o.dept}`.replace(/,/g, '、');
+    return [
+      date, o.id,
+      debit, '', '', tax, total, taxAmt,
+      credit, '', '', '', total, '',
+      memo, '', '', ''
+    ].join(',');
+  });
+}
+
+function previewCsv() {
+  const targets = getCsvTargetOrders();
+  const area = document.getElementById('csv-preview-area');
+  if (targets.length === 0) {
+    area.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">条件に一致するデータがありません</div>`;
+    return;
+  }
+  const credit = getCreditAccount();
+  area.innerHTML = `
+    <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:4px;">
+      <div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;justify-content:space-between;">
+        <span>プレビュー（${targets.length}件）</span>
+        <span>弥生会計 仕訳インポート形式</span>
+      </div>
+      <div style="overflow-x:auto;max-height:200px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono);">
+          <thead>
+            <tr style="background:var(--surface2);">
+              ${['日付','伝票番号','借方科目','税区分','借方金額','消費税','貸方科目','摘要'].map(h=>`<th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);">${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${targets.map(o => {
+              const { debit, tax } = getDebitForCategory(o.category);
+              const total  = o.qty * o.price;
+              const taxAmt = tax.includes('10%') ? Math.round(total*10/110) : tax.includes('8%') ? Math.round(total*8/108) : 0;
+              const isBihin = debit === '備品';
+              return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:5px 8px;white-space:nowrap;">${o.date}</td>
+                <td style="padding:5px 8px;color:var(--text3);">${o.id}</td>
+                <td style="padding:5px 8px;">
+                  <span style="display:inline-flex;align-items:center;gap:4px;">
+                    <span style="width:7px;height:7px;border-radius:50%;background:${isBihin?'var(--info)':'var(--accent-mid)'};flex-shrink:0;"></span>
+                    ${debit}
+                  </span>
+                </td>
+                <td style="padding:5px 8px;color:var(--text3);">${tax}</td>
+                <td style="padding:5px 8px;text-align:right;">¥${total.toLocaleString()}</td>
+                <td style="padding:5px 8px;text-align:right;color:var(--text3);">¥${taxAmt.toLocaleString()}</td>
+                <td style="padding:5px 8px;">${credit}</td>
+                <td style="padding:5px 8px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);">${o.item}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border);font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;">
+        <span style="display:flex;gap:12px;">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent-mid);"></span>消耗品費/雑費系</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--info);"></span>備品系</span>
+        </span>
+        <span style="font-weight:600;">合計 ¥${targets.reduce((s,o)=>s+o.qty*o.price,0).toLocaleString()}</span>
+      </div>
+    </div>
+  `;
+}
+
+function downloadCsv() {
+  const targets = getCsvTargetOrders();
+  if (targets.length === 0) { toast('出力対象のデータがありません', 'warn'); return; }
+  const rows   = buildYayoiRows(targets);
+  const header = '伝票日付,伝票番号,借方勘定科目,借方補助科目,借方部門,借方税区分,借方金額,借方消費税額,貸方勘定科目,貸方補助科目,貸方部門,貸方税区分,貸方金額,貸方消費税額,摘要,番号,決算,生成元';
+  const bom    = '\uFEFF';
+  const csv    = bom + header + '\n' + rows.join('\n');
+  const blob   = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  const from   = document.getElementById('csv-date-from').value || '全期間';
+  const to     = document.getElementById('csv-date-to').value   || '';
+  a.href = url;
+  a.download = `弥生仕訳_備品発注_${from}${to ? '_' + to : ''}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`${targets.length}件のCSVをダウンロードしました`);
+  closeModal('csv');
+}
+
+// ---- Modals ----
+function openModal(type) { document.getElementById('modal-' + type).classList.add('open'); }
+function closeModal(type) { document.getElementById('modal-' + type).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ---- Init ----
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+// CSV期間デフォルト：当月1日〜今日
+const now = new Date();
+const firstDay = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+const today = now.toISOString().slice(0,10);
+document.getElementById('csv-date-from').value = firstDay;
+document.getElementById('csv-date-to').value = today;
+renderMappingTable();
+renderDashboard();
+</script>
+</body>
+</html>
